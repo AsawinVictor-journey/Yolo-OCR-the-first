@@ -1,5 +1,4 @@
 
-
 download yolodetect:
 curl -o yolo_detect.py https://www.ejtech.io/code/yolo_detect.py
 

@@ -125,6 +125,25 @@ frame_rate_buffer = []
 fps_avg_len = 200
 img_count = 0
 
+# Rock Paper Scissors stuff
+# --- RPS GAME SETUP ---
+import random # Add this at the very top of your script
+
+# Define what beats what. Make sure these match your YOLO labels exactly!
+# If your labels are '0', '1', '2', change the keys below to '0', '1', etc.
+rules = {
+    'rock': 'scissors',
+    'paper': 'rock',
+    'scissors': 'paper'
+}
+
+game_state = "WAITING"  # Options: WAITING, COUNTING, RESULTS
+game_timer = 0
+cpu_choice = None
+user_choice = None
+winner_text = ""
+# ----------------------
+
 # Begin inference loop
 while True:
 
@@ -171,43 +190,64 @@ while True:
     # Initialize variable for basic object counting example
     object_count = 0
 
+  # IMPORTANT: Define resW/resH if they don't exist (safety)
+    if not resize:
+        resH, resW, _ = frame.shape
+
     # Go through each detection and get bbox coords, confidence, and class
+    # --- DETECTION LOOP ---
     for i in range(len(detections)):
-
-        # Get bounding box coordinates
-        # Ultralytics returns results in Tensor format, which have to be converted to a regular Python array
-        xyxy_tensor = detections[i].xyxy.cpu() # Detections in Tensor format in CPU memory
-        xyxy = xyxy_tensor.numpy().squeeze() # Convert tensors to Numpy array
-        xmin, ymin, xmax, ymax = xyxy.astype(int) # Extract individual coordinates and convert to int
-
-        # Get bounding box class ID and name
         classidx = int(detections[i].cls.item())
         classname = labels[classidx]
-
-        # Get bounding box confidence
         conf = detections[i].conf.item()
 
-        # Draw box if confidence threshold is high enough
-        if conf > 0.5:
-
+        if conf > min_thresh: # Use your threshold variable here
+            xyxy = detections[i].xyxy.cpu().numpy().squeeze().astype(int)
+            xmin, ymin, xmax, ymax = xyxy
+            
+            # Draw visual feedback
             color = bbox_colors[classidx % 10]
             cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), color, 2)
+            
+            # Capture the player's move
+            current_user_move = classname
+            object_count += 1
 
-            label = f'{classname}: {int(conf*100)}%'
-            labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1) # Get font size
-            label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-            cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), color, cv2.FILLED) # Draw white box to put label text in
-            cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1) # Draw label text
+    # --- GAME LOGIC ---
+    current_time = time.perf_counter()
 
-            # Basic example: count the number of objects in the image
-            object_count = object_count + 1
+    if game_state == "COUNTING":
+        countdown = int(game_timer - current_time)
+        cv2.putText(frame, f"READY... {countdown}", (resW//3, resH//2), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 255), 10)
+        
+        if countdown <= 0:
+            game_state = "RESULTS"
+            cpu_choice = random.choice(list(rules.keys()))
+            
+            # Use 'current_user_move' captured from the loop above
+            user_choice = current_user_move if 'current_user_move' in locals() else "None"
+            
+            if user_choice == cpu_choice:
+                winner_text = "TIE!"
+            elif rules.get(user_choice) == cpu_choice:
+                winner_text = "YOU WIN!"
+            else:
+                winner_text = "CPU WINS!"
 
-    # Calculate and draw framerate (if using video, USB, or Picamera source)
-    if source_type == 'video' or source_type == 'usb' or source_type == 'picamera':
-        cv2.putText(frame, f'FPS: {avg_frame_rate:0.2f}', (10,20), cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # Draw framerate
-    
-    # Display detection results
-    cv2.putText(frame, f'Number of objects: {object_count}', (10,40), cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # Draw total number of detected objects
+    elif game_state == "RESULTS":
+        cv2.putText(frame, f"YOU: {user_choice.upper()} | CPU: {cpu_choice.upper()}", 
+                    (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(frame, winner_text, (resW//3, 200), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 5)
+        cv2.putText(frame, "Press 'SPACE' to Play Again", (10, resH - 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+
+    elif game_state == "WAITING":
+        cv2.putText(frame, "PRESS 'SPACE' TO PLAY", (resW//4, resH//2), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3)
+#----------------------------------------------------------------------------------------
+
     cv2.imshow('YOLO detection results',frame) # Display image
     if record: recorder.write(frame)
 
@@ -223,7 +263,14 @@ while True:
         cv2.waitKey()
     elif key == ord('p') or key == ord('P'): # Press 'p' to save a picture of results on this frame
         cv2.imwrite('capture.png',frame)
-    
+
+    # space to start game countdown
+    if key == ord(' '): # Spacebar
+        game_state = "COUNTING"
+        game_timer = time.perf_counter() + 4 # 3 second countdown + 1s buffer
+        current_user_move = "None" # Reset move
+    #-------------------------------------------------------------------
+
     # Calculate FPS for this frame
     t_stop = time.perf_counter()
     frame_rate_calc = float(1/(t_stop - t_start))

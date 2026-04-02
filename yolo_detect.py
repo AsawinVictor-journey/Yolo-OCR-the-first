@@ -239,7 +239,7 @@ while True:
 
       # Draw a semi-transparent overlay for the results
         overlay = frame.copy()
-        cv2.rectangle(overlay, (0, 0), (resW, 250), (0, 0, 0), -1)
+        cv2.rectangle(overlay, (0, 0), (resW, 25), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
       
         cv2.putText(frame, f"YOU: {user_choice.upper()} | CPU: {cpu_choice.upper()}", 
@@ -250,7 +250,7 @@ while True:
         if winner_text == "TIE!": result_color = (0, 255, 255)
 
         cv2.putText(frame, winner_text, (resW//3, 200), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 5)
+                    cv2.FONT_HERSHEY_SIMPLEX, 3, result_color , 6)
         cv2.putText(frame, "Press 'SPACE' to Play Again", (10, resH - 20), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 

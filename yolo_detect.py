@@ -137,6 +137,12 @@ rules = {
     'Scissors': 'Paper'
 }
 
+cpu_images = {
+    'Rock': 'CPU choice img/Rock.jpg',
+    'Paper': 'CPU choice img/Papper.avif',
+    'Scissors': 'CPU choice img/Scissors.webp'
+}
+
 game_state = "WAITING"  # Options: WAITING, COUNTING, RESULTS
 game_timer = 0
 cpu_choice = None
@@ -229,30 +235,61 @@ while True:
             user_choice = current_user_move if 'current_user_move' in locals() else "None"
             
             if user_choice == cpu_choice:
-                winner_text = "TIE!"
+                winner_text = "TIE :/"
             elif rules.get(user_choice) == cpu_choice:
-                winner_text = "YOU WIN!"
+                winner_text = "YOU WIN :D"
             else:
-                winner_text = "CPU WINS!"
+                winner_text = "YOU LOSE ;("
 
     elif game_state == "RESULTS":
 
-      # Draw a semi-transparent overlay for the results
+        # Get the results text
+        results_text = f"YOU: {user_choice.upper()} | CPU: {cpu_choice.upper()}"
+        
+        # Calculate text size
+        (text_width, text_height), baseline = cv2.getTextSize(results_text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+        
+        # Define padding around the text
+        padding = 10
+        
+        # Calculate box coordinates
+        box_x1 = 10 - padding
+        box_y1 = 100 - text_height - padding
+        box_x2 = 10 + text_width + padding
+        box_y2 = 100 + baseline + padding
+        
+        # Draw a semi-transparent overlay box sized to the text
         overlay = frame.copy()
-        cv2.rectangle(overlay, (0, 0), (resW, 25), (0, 0, 0), -1)
+        cv2.rectangle(overlay, (box_x1, box_y1), (box_x2, box_y2), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
-      
-        cv2.putText(frame, f"YOU: {user_choice.upper()} | CPU: {cpu_choice.upper()}", 
+        
+        cv2.putText(frame, results_text, 
                     (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
       # Color the winner text: Green for Win, Red for Loss
-        result_color = (0, 255, 0) if "WIN" in winner_text else (0, 0, 255)
-        if winner_text == "TIE!": result_color = (0, 255, 255)
+        if winner_text == "YOU WIN :D": result_color = (0,255,0)
+        elif winner_text == "TIE :/": result_color = (0, 255, 255)
+        else : result_color = (0,0,255)
 
         cv2.putText(frame, winner_text, (resW//3, 200), 
                     cv2.FONT_HERSHEY_SIMPLEX, 3, result_color , 6)
         cv2.putText(frame, "Press 'SPACE' to Play Again", (10, resH - 20), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+
+        # Display CPU choice image below results
+        if cpu_choice in cpu_images:
+            img_path = cpu_images[cpu_choice]
+            cpu_img = cv2.imread(img_path)
+            if cpu_img is not None:
+                # Resize to 300x300
+                cpu_img = cv2.resize(cpu_img, (300, 300))
+                # Position below winner_text, to the left
+                img_h, img_w = cpu_img.shape[:2]
+                start_x = 30  # Left aligned
+                start_y = 150  # Adjust as needed
+                # Ensure it fits in frame
+                if start_y + img_h <= resH and start_x >= 0 and start_x + img_w <= resW:
+                    frame[start_y:start_y+img_h, start_x:start_x+img_w] = cpu_img
 
     elif game_state == "WAITING":
         cv2.putText(frame, "PRESS 'SPACE' TO PLAY", (resW//4, resH//2), 

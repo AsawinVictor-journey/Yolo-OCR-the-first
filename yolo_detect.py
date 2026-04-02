@@ -132,9 +132,9 @@ import random # Add this at the very top of your script
 # Define what beats what. Make sure these match your YOLO labels exactly!
 # If your labels are '0', '1', '2', change the keys below to '0', '1', etc.
 rules = {
-    'rock': 'scissors',
-    'paper': 'rock',
-    'scissors': 'paper'
+    'Rock': 'Scissors',
+    'Paper': 'Rock',
+    'Scissors': 'Paper'
 }
 
 game_state = "WAITING"  # Options: WAITING, COUNTING, RESULTS

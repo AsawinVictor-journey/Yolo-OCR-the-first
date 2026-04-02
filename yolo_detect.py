@@ -236,14 +236,27 @@ while True:
                 winner_text = "CPU WINS!"
 
     elif game_state == "RESULTS":
+
+      # Draw a semi-transparent overlay for the results
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (resW, 250), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
+      
         cv2.putText(frame, f"YOU: {user_choice.upper()} | CPU: {cpu_choice.upper()}", 
                     (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+      # Color the winner text: Green for Win, Red for Loss
+        result_color = (0, 255, 0) if "WIN" in winner_text else (0, 0, 255)
+        if winner_text == "TIE!": result_color = (0, 255, 255)
+
         cv2.putText(frame, winner_text, (resW//3, 200), 
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 5)
         cv2.putText(frame, "Press 'SPACE' to Play Again", (10, resH - 20), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
     elif game_state == "WAITING":
+        cv2.putText(frame, "PRESS 'SPACE' TO PLAY", (resW//4, resH//2), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 8) # Shadow
         cv2.putText(frame, "PRESS 'SPACE' TO PLAY", (resW//4, resH//2), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3)
 #----------------------------------------------------------------------------------------

@@ -5,3 +5,8 @@ curl -o yolo_detect.py https://www.ejtech.io/code/yolo_detect.py
 
 command:
 python yolo_detect.py --model my_RoPaSci.pt --source usb0 --resolution 1280x720
+
+sources:
+usb0 = camera
+file name = file in folder
+screen = your screen

@@ -67,7 +67,7 @@ elif 'screen' in img_source:  # <--- ADD THIS BLOCK
     import mss
     sct = mss.mss()
     # Use the primary monitor
-    monitor = sct.monitors[2]
+    monitor = sct.monitors[1]
 
 elif 'picamera' in img_source:
     source_type = 'picamera'

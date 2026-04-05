@@ -61,6 +61,14 @@ elif os.path.isfile(img_source):
 elif 'usb' in img_source:
     source_type = 'usb'
     usb_idx = int(img_source[3:])
+
+elif 'screen' in img_source:  # <--- ADD THIS BLOCK
+    source_type = 'screen'
+    import mss
+    sct = mss.mss()
+    # Use the primary monitor
+    monitor = sct.monitors[2]
+
 elif 'picamera' in img_source:
     source_type = 'picamera'
     picam_idx = int(img_source[8:])
@@ -73,6 +81,8 @@ resize = False
 if user_res:
     resize = True
     resW, resH = int(user_res.split('x')[0]), int(user_res.split('x')[1])
+elif source_type == 'screen': # <--- ADD THIS
+    resW, resH = monitor["width"], monitor["height"]
 
 # Check if recording is valid and set up recording
 if record:
@@ -155,8 +165,15 @@ while True:
 
     t_start = time.perf_counter()
 
+    if source_type == 'screen': # <--- ADD THIS BLOCK
+        # Grab the screen shot
+        sct_img = sct.grab(monitor)
+        # Convert to numpy array and drop alpha channel
+        frame = np.array(sct_img)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
     # Load frame from image source
-    if source_type == 'image' or source_type == 'folder': # If source is image or image folder, load the image using its filename
+    elif source_type == 'image' or source_type == 'folder': # If source is image or image folder, load the image using its filename
         if img_count >= len(imgs_list):
             print('All images have been processed. Exiting program.')
             sys.exit(0)
@@ -301,11 +318,14 @@ while True:
     cv2.imshow('YOLO detection results',frame) # Display image
     if record: recorder.write(frame)
 
-    # If inferencing on individual images, wait for user keypress before moving to next image. Otherwise, wait 5ms before moving to next frame.
+    # If inferencing on individual images, wait for user keypress. 
+    # For video, usb, or screen, wait 5ms.
     if source_type == 'image' or source_type == 'folder':
         key = cv2.waitKey()
-    elif source_type == 'video' or source_type == 'usb' or source_type == 'picamera':
+    elif source_type in ['video', 'usb', 'picamera', 'screen']: # <--- ADD 'screen' HERE
         key = cv2.waitKey(5)
+    else:
+        key = -1 # Default value so 'key' always exists
     
     if key == ord('q') or key == ord('Q'): # Press 'q' to quit
         break
